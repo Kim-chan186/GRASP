@@ -176,9 +176,14 @@ class depth_layer(nn.Module):
             self.in_channels = out_channels * block.expansion
 
         return nn.Sequential(*layers)
+    
     def forward(self, x):
-        x = self.net(x)
-        return x
+        o1 = self.conv1(x)
+        o2 = self.conv2_x(o1)
+        o3 = self.conv3_x(o2)
+        o4 = self.conv4_x(o3)
+        o5 = self.conv5_x(o4)
+        return [o1, o2, o3, o4, o5]
 
 def conv_with_dim_reshape(in_dim, mid_dim, out_dim, bias=True):
     return nn.Sequential(convolution(in_dim, mid_dim, 5, bias=bias),
