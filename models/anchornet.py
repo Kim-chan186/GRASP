@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 from .resnet_model import BasicBlock, BottleNeck, ResNet
 
-import pdb
 
 def set_bn_momentum_default(bn_momentum):
 
@@ -131,6 +130,55 @@ class upsampleconvolution(nn.Module):
         x = self.deconv(x)
         return x
 
+class depth_layer(nn.Module):
+    def __init__(self, in_dim, planes=16, mode='34'):
+        # if out_dim is None then return features
+        super().__init__()
+        
+        # mode == '34':
+        # self.net = ResNet(BasicBlock, [3, 4, 6, 3], in_dim=in_dim, planes=planes)
+        num_blocks = [3, 4, 6, 3]
+        self.in_channels = planes * 4 if BasicBlock is BottleNeck else planes
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_dim,
+                      out_channels=self.in_channels,
+                      kernel_size=7,
+                      stride=2,
+                      padding=3,
+                      bias=False), nn.BatchNorm2d(self.in_channels),
+            nn.LeakyReLU(inplace=True))
+        self.conv2_x = self._make_layer(BasicBlock, planes * 2, num_blocks[0], 2)
+        self.conv3_x = self._make_layer(BasicBlock, planes * 4, num_blocks[1], 2)
+        self.conv4_x = self._make_layer(BasicBlock, planes * 8, num_blocks[2], 2)
+        self.conv5_x = self._make_layer(BasicBlock, planes * 16, num_blocks[3], 2)
+        embeddings = planes * 16 * BasicBlock.expansion  # * 1 for resnet<50, * 4 for resnet>=50
+        
+    def _make_layer(self, block, out_channels, num_block, stride):
+        """make resnet layers(by layer i didnt mean this 'layer' was the same
+        as a neuron netowork layer, ex.
+
+        conv layer), one layer may
+        contain more than one residual block
+        Args:
+            block: block type, basic block or bottle neck block
+            out_channels: output depth channel number of this layer
+            num_blocks: how many blocks per layer
+            stride: the stride of the first block of this layer
+        Return:
+            return a resnet layer
+        """
+        # we have num_block blocks per layer, the first block
+        # could be 1 or 2, other blocks would always be 1
+        strides = [stride] + [1] * (num_block - 1)
+        layers = []
+        for stride in strides:
+            layers.append(block(self.in_channels, out_channels, stride))
+            self.in_channels = out_channels * block.expansion
+
+        return nn.Sequential(*layers)
+    def forward(self, x):
+        x = self.net(x)
+        return x
 
 def conv_with_dim_reshape(in_dim, mid_dim, out_dim, bias=True):
     return nn.Sequential(convolution(in_dim, mid_dim, 5, bias=bias),
@@ -141,7 +189,7 @@ class AnchorGraspNet(nn.Module):
 
     def __init__(self,
                  ratio=1,
-                 in_dim=3, # 4를 사용 (rgb-d)
+                 in_dim=3,
                  anchor_k=6,
                  mid_dim=32,
                  use_upsampling=False):
@@ -153,16 +201,16 @@ class AnchorGraspNet(nn.Module):
         # backbone
         self.feature_dim = 128
         self.backbone = Backbone(in_dim, self.feature_dim // 16)
-        # 
+        self.depth_backbone = Backbone(1, self.feature_dim // 16)
 
         # transconv
         self.depth = 4
-        channels = [ # = 64, 32, 16, 8, 8
+        channels = [
             max(8, self.feature_dim // (2**(i + 1)))
             for i in range(self.depth + 1)
         ]
-        cur_dim = self.feature_dim # = 128
-        # output_sizes = [(40, 23), (80, 45)]
+        cur_dim = self.feature_dim
+        output_sizes = [(40, 23), (80, 45)]
         for i, dim in enumerate(channels):
             if use_upsampling:
                 if i < min(5 - np.log2(ratio), 2):
@@ -171,14 +219,12 @@ class AnchorGraspNet(nn.Module):
                 else:
                     self.trconv.append(upsampleconvolution(cur_dim, dim))
             else:
-                # 0, 1, 2
-                if i < min(5 - np.log2(ratio), 2): # np.log2(ratio) = 3, i < 2
+                if i < min(5 - np.log2(ratio), 2):
                     self.trconv.append(
                         trconvolution(cur_dim,
                                       dim,
                                       padding=(1, 2),
                                       output_padding=(0, 1)))
-                # 3, 4
                 else:
                     self.trconv.append(trconvolution(cur_dim, dim))
             cur_dim = dim
@@ -207,37 +253,25 @@ class AnchorGraspNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-        # print(f"Conv kernel shape: {self.backbone.net}")
-        # # Transposed convolution layers
-        # for iii, trconv_layer in enumerate(self.trconv):
-        #     print(f"TransConv{iii} kernel shape: {trconv_layer}")
-        # pdb.set_trace()
-        
     def forward(self, x):
         # use backbone to get downscaled features
-        # print("conv input : ", x.shape)
         xs = self.backbone(x)
-        # for ii, layer in enumerate(self.trconv):
-        #     print(f"{ii} conv output : ", xs[ii].shape)
-
+        #! x = np.vstack([norm_depth[None], norm_rgb])
+        ds = self.depth_backbone(x[:, 0])
         # use transposeconve or upsampling + conv to get perpoint features
         x = xs[-1]
-        # print("trans conv input : ", x.shape)
         for i, layer in enumerate(self.trconv):
             # skip connection
-            x = layer(x + xs[self.depth - i])
+            x = layer(x + ds[self.depth - i])
             # down sample classification mask
             if x.shape[2] == 80:
                 features = x.detach()
-            if int(np.log2(self.ratio)) == self.depth - i:# 3 == 4-i
+            if int(np.log2(self.ratio)) == self.depth - i:
                 cls_mask = self.cls_mask_conv(x)
                 theta_offset = self.theta_offset_conv(x)
                 width_offset = self.width_offset_conv(x)
                 depth_offset = self.depth_offset_conv(x)
-            # print(f"{i} trans conv output : ", x.shape)
         # full scale location map
-        # print("heads shape : ", features.shape, cls_mask.shape, theta_offset.shape, width_offset.shape, depth_offset.shape)
-        
         loc_map = self.hmap(x)
         return (loc_map, cls_mask, theta_offset, depth_offset,
                 width_offset), features
