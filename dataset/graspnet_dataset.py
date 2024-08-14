@@ -99,7 +99,6 @@ class GraspnetAnchorDataset(GraspDataset):
                 self.metapath.append(
                     os.path.join(graspnetroot, 'scenes', x, camera, 'meta',
                                  str(img_num).zfill(4) + '.mat'))
-                print("@@@@@@@", x, "@@@@@@@")
                 self.scenename.append(x.strip())
                 self.frameid.append(img_num)
 

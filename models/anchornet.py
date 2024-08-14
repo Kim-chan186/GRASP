@@ -262,7 +262,7 @@ class AnchorGraspNet(nn.Module):
         x = xs[-1]
         for i, layer in enumerate(self.trconv):
             # skip connection
-            x = layer(x + ds[self.depth - i])
+            x = layer(x + xs[self.depth - i] + ds[self.depth - i])
             # down sample classification mask
             if x.shape[2] == 80:
                 features = x.detach()
