@@ -24,7 +24,7 @@ CUDA_VISIBLE_DEVICES=0 python train_graspnet.py \
 --num-workers 1 \
 --save-freq 1 \
 --optim 'adamw' \
---dataset-path '/home/chkim/hggd_data/realsense/6dto2drefine_realsense' \
---scene-path '/home/chkim/GraspNet1Billiion/train' \
+--dataset-path '/home/chkim/GRASP/hggd_data/realsense/6dto2drefine_realsense' \
+--scene-path '/home/chkim/GRASP/GraspNet1Billiion/scene_data' \
 --description 'realsense' \
 --joint-trainning
