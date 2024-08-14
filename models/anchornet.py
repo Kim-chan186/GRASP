@@ -131,7 +131,7 @@ class upsampleconvolution(nn.Module):
         return x
 
 class depth_layer(nn.Module):
-    def __init__(self, in_dim, planes=16, mode='34'):
+    def __init__(self, in_dim, planes=16):
         # if out_dim is None then return features
         super().__init__()
         
@@ -201,7 +201,7 @@ class AnchorGraspNet(nn.Module):
         # backbone
         self.feature_dim = 128
         self.backbone = Backbone(in_dim, self.feature_dim // 16)
-        self.depth_backbone = Backbone(1, self.feature_dim // 16)
+        self.depth_backbone = depth_layer(1, self.feature_dim // 16)
 
         # transconv
         self.depth = 4
