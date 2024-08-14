@@ -200,8 +200,8 @@ class AnchorGraspNet(nn.Module):
         self.trconv = nn.ModuleList()
         # backbone
         self.feature_dim = 128
-        self.backbone = Backbone(in_dim, self.feature_dim // 16)
-        self.depth_backbone = depth_layer(1, self.feature_dim // 16)
+        self.backbone = Backbone(in_dim, self.feature_dim // 16)     #! planes = feature_dim // 16
+        self.depth_backbone = depth_layer(1, self.feature_dim // 16) #!        = 8
 
         # transconv
         self.depth = 4
@@ -256,12 +256,13 @@ class AnchorGraspNet(nn.Module):
     def forward(self, x):
         # use backbone to get downscaled features
         xs = self.backbone(x)
-        #! x = np.vstack([norm_depth[None], norm_rgb])
-        print("shape print!!")
-        for f in xs:
-            print("f", f.shape)
-        print("x", x.shape)
-        ds = self.depth_backbone(x[:, 0])
+        #! input image 'x' is = np.vstack([norm_depth[None], norm_rgb]) - Size([4, 4, 640, 360])
+        # xs[0] [4, 8, 320, 180]
+        # xs[1] [4, 16, 160, 90]
+        # xs[2] [4, 32, 80, 45]
+        # xs[3] [4, 64, 40, 23]
+        # xs[4] [4, 128, 20, 12]
+        ds = self.depth_backbone(x[:, [0], :, :])
         # use transposeconve or upsampling + conv to get perpoint features
         x = xs[-1]
         for i, layer in enumerate(self.trconv):
