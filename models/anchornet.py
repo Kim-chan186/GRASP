@@ -257,6 +257,10 @@ class AnchorGraspNet(nn.Module):
         # use backbone to get downscaled features
         xs = self.backbone(x)
         #! x = np.vstack([norm_depth[None], norm_rgb])
+        print("shape print!!")
+        for f in xs:
+            print("f", f.shape)
+        print("x", x.shape)
         ds = self.depth_backbone(x[:, 0])
         # use transposeconve or upsampling + conv to get perpoint features
         x = xs[-1]
