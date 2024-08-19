@@ -1,0 +1,1 @@
+{"learning_rate": 0.19, "_timestamp": 1724038280.38483, "_runtime": 2.258871078491211, "_step": 59, "train/loss": 1.9, "resource/cpu_usage": 8.8, "resource/memory_usage": 22.0, "resource/gpu_usage": 45.0, "resource/gpu_temp": 40.0, "_wandb": {"runtime": 1}}

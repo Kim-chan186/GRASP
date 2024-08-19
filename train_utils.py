@@ -27,6 +27,10 @@ def log_acc_str(name, T, F):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train network')
+    # wandb
+    parser.add_argument('--wandb-project_name', type=str, default='test name', help='wandb project name')
+    parser.add_argument('--wandb-key', type=str, default=None, help='wandb API key')
+
     # Network
     # 2d
     parser.add_argument('--resume', type=str, default=None, help='Model path')

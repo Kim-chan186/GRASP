@@ -28,3 +28,7 @@ CUDA_VISIBLE_DEVICES=0 python train_graspnet.py \
 --scene-path '/home/chkim/GRASP/GraspNet1Billiion/scene_data' \
 --description 'realsense' \
 --joint-trainning
+
+--wandb-key ead4e17f10e71dced63d75d8841e02621ac32330
+--wandb-project_name GRASP_based_on_HGGD
+
