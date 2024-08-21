@@ -554,7 +554,13 @@ def run():
 
     # set wandb
     #wandb.init(project="my-project", config={"learning_rate": 0.001, "epochs": 10})
-    my_wandb_init(args.key, args.project_name, config={args})
+#    if args.wandb_key is None: 
+#        args.wandb_key  = 'ead4e17f10e71dced63d75d8841e02621ac32330'
+#        print("change key")
+#    if args.wandb_project_name == 'test name' :
+#        args.wandb_project_name='GRASP_based_on_HGGD'    
+#        print("change pj name")
+#    my_wandb_init(args.wandb_key, args.wandb_project_name, config={args})
     
     # Load Dataset
     logging.info('Loading Dataset...')
@@ -684,7 +690,7 @@ def run():
                      save_folder,
                      mode='graspnet')
 
-    wandb.finish()
+#    wandb.finish()
 
 if __name__ == '__main__':
     run()

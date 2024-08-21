@@ -28,7 +28,7 @@ def log_acc_str(name, T, F):
 def parse_args():
     parser = argparse.ArgumentParser(description='Train network')
     # wandb
-    parser.add_argument('--wandb-project_name', type=str, default='test name', help='wandb project name')
+    parser.add_argument('--wandb-project-name', type=str, default='test name', help='wandb project name')
     parser.add_argument('--wandb-key', type=str, default=None, help='wandb API key')
 
     # Network
@@ -350,24 +350,24 @@ def log_and_save(args,
     gpu_usage = gpus[0].load * 100
     gpu_temp = gpus[0].temperature
     
-    wandb.log({
-        "RES/cpu_usage": cpu_usage,
-        "RES/memory_usage": memory_usage,
-        "RES/gpu_usage": gpu_usage,
-        "RES/gpu_temp": gpu_temp,
+  #  wandb.log({
+ #       "RES/cpu_usage": cpu_usage,
+ #       "RES/memory_usage": memory_usage,
+ #       "RES/gpu_usage": gpu_usage,
+ #       "RES/gpu_temp": gpu_temp,
 
-        "VAL/loss":results['loss'],
-        "VAL/anchor_loss":results['anchor_loss'],
-        "VAL/multi_cls_loss":results['multi_cls_loss'],
-        "VAL/offset_loss":results['offset_loss'],
+ #       "VAL/loss":results['loss'],
+ #       "VAL/anchor_loss":results['anchor_loss'],
+ #       "VAL/multi_cls_loss":results['multi_cls_loss'],
+ #       "VAL/offset_loss":results['offset_loss'],
 
-        "VAL/loc_map_loss":results["losses"]["loc_map_loss"],
-        "VAL/reg_loss":results["losses"]["reg_loss"],
-        "VAL/cls_loss":results["losses"]["cls_loss"],
+ #       "VAL/loc_map_loss":results["losses"]["loc_map_loss"],
+  #      "VAL/reg_loss":results["losses"]["reg_loss"],
+   #     "VAL/cls_loss":results["losses"]["cls_loss"],
 
-        "VAL/cover":results['cover_cnt']/results['label_cnt'],
-        "VAL/IoU":results['correct'] / results['total']
-    })
+    #    "VAL/cover":results['cover_cnt']/results['label_cnt'],
+     #   "VAL/IoU":results['correct'] / results['total']
+#    })
 
     tb.add_scalar('val_loss/loss', results['loss'], epoch)
     tb.add_scalar('val_loss/anchor_loss', results['anchor_loss'], epoch)
