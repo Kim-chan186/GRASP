@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 from .resnet_model import BasicBlock, BottleNeck, ResNet
 
+from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+import supervision as sv
 
 def set_bn_momentum_default(bn_momentum):
 
@@ -205,9 +207,12 @@ class AnchorGraspNet(nn.Module):
         self.trconv = nn.ModuleList()
         # backbone
         self.feature_dim = 128
-        self.backbone = Backbone(in_dim, self.feature_dim // 16)     #! planes = feature_dim // 16
+        self.backbone = Backbone(in_dim * 2, self.feature_dim // 16)     #! planes = feature_dim // 16
         self.depth_backbone = depth_layer(1, self.feature_dim // 16) #!        = 8
 
+        sam_model = sam_model_registry["vit_h"](checkpoint="./sam_vit_h_4b8939.pth")
+        self.sam = SamAutomaticMaskGenerator(sam_model)
+        self.annotator = sv.MaskAnnotator(color_lookup=sv.ColorLookup.INDEX)
         # transconv
         self.depth = 4
         channels = [
@@ -260,6 +265,12 @@ class AnchorGraspNet(nn.Module):
 
     def forward(self, x):
         # use backbone to get downscaled features
+        rgb = x[:, [0], :, :]
+        sam_mask = self.sam.generate(rgb)
+        sam_det = sv.Detections.from_sam(sam_result=sam_mask)
+        sa = self.annotator.annotate(scene=np.zeros(rgb.shape, dtype=np.uint8), detections=detections)
+
+        torch.cat([rgb, sa], 1)
         xs = self.backbone(x)
         #! input image 'x' is = np.vstack([norm_depth[None], norm_rgb]) - Size([4, 4, 640, 360])
         # xs[0] [4, 8, 320, 180]
@@ -267,12 +278,12 @@ class AnchorGraspNet(nn.Module):
         # xs[2] [4, 32, 80, 45]
         # xs[3] [4, 64, 40, 23]
         # xs[4] [4, 128, 20, 12]
-        ds = self.depth_backbone(x[:, [0], :, :])
+        # ds = self.depth_backbone(x[:, [0], :, :])
         # use transposeconve or upsampling + conv to get perpoint features
         x = xs[-1]
         for i, layer in enumerate(self.trconv):
             # skip connection
-            x = layer(x + xs[self.depth - i] + ds[self.depth - i])
+            x = layer(x + xs[self.depth - i]) #  + ds[self.depth - i]
             # down sample classification mask
             if x.shape[2] == 80:
                 features = x.detach()
