@@ -265,12 +265,16 @@ class AnchorGraspNet(nn.Module):
 
     def forward(self, x):
         # use backbone to get downscaled features
-        rgb = x[:, [0], :, :]
-        sam_mask = self.sam.generate(rgb)
-        sam_det = sv.Detections.from_sam(sam_result=sam_mask)
-        sa = self.annotator.annotate(scene=np.zeros(rgb.shape, dtype=np.uint8), detections=detections)
+        rgbs = x[:, 1:, :, :]
+        sams = []
+        for rgb in rgbs:
+            sam_mask = self.sam.generate(rgb)
+            sam_det = sv.Detections.from_sam(sam_result=sam_mask)
+            sa = self.annotator.annotate(scene=np.zeros(rgb.shape, dtype=np.uint8), detections=sam_det)
+            sams.append(sa)
+        torch.tensor(sams)
 
-        torch.cat([rgb, sa], 1)
+        torch.cat([rgb, sams], 1)
         xs = self.backbone(x)
         #! input image 'x' is = np.vstack([norm_depth[None], norm_rgb]) - Size([4, 4, 640, 360])
         # xs[0] [4, 8, 320, 180]
