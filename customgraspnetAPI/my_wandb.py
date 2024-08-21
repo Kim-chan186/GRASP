@@ -17,10 +17,16 @@ def log_system_metrics():
     
     # 메트릭 로깅
     wandb.log({
-        "cpu_usage": cpu_usage,
-        "memory_usage": memory_usage,
-        "gpu_usage": gpu_usage,
-        "gpu_temp": gpu_temp
+        "res/CPU_usage": cpu_usage,
+        "res/GPU_usage": gpu_usage,
+        "res/GPU_temp": gpu_temp,
+        "res/memory_usage": memory_usage
     })
 
+# ead4e17f10e71dced63d75d8841e02621ac32330
+# 프로젝트 초기화
+def my_wandb_init(key, project_name, config):
+    if key is not None:
+        wandb.login(key=key)
+    wandb.init(project=project_name, config=config)
     
