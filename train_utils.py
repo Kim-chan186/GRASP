@@ -335,6 +335,40 @@ def log_and_save(args,
                  mode='regnet'):
     # Log validation results to tensorbaord
     # loss
+    import wandb
+    import psutil
+    import GPUtil
+    # CPU 사용량
+    cpu_usage = psutil.cpu_percent(interval=None)
+    
+    # 메모리 사용량
+    memory_info = psutil.virtual_memory()
+    memory_usage = memory_info.percent
+    
+    # GPU 사용량 및 온도
+    gpus = GPUtil.getGPUs()
+    gpu_usage = gpus[0].load * 100
+    gpu_temp = gpus[0].temperature
+    
+    wandb.log({
+        "RES/cpu_usage": cpu_usage,
+        "RES/memory_usage": memory_usage,
+        "RES/gpu_usage": gpu_usage,
+        "RES/gpu_temp": gpu_temp,
+
+        "VAL/loss":results['loss'],
+        "VAL/anchor_loss":results['anchor_loss'],
+        "VAL/multi_cls_loss":results['multi_cls_loss'],
+        "VAL/offset_loss":results['offset_loss'],
+
+        "VAL/loc_map_loss":results["losses"]["loc_map_loss"],
+        "VAL/reg_loss":results["losses"]["reg_loss"],
+        "VAL/cls_loss":results["losses"]["cls_loss"],
+
+        "VAL/cover":results['cover_cnt']/results['label_cnt'],
+        "VAL/IoU":results['correct'] / results['total']
+    })
+
     tb.add_scalar('val_loss/loss', results['loss'], epoch)
     tb.add_scalar('val_loss/anchor_loss', results['anchor_loss'], epoch)
     for n, l in results['losses'].items():

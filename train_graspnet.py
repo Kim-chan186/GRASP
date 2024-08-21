@@ -27,6 +27,8 @@ from models.localgraspnet import PointMultiGraspNet
 from models.losses import compute_anchor_loss, compute_multicls_loss
 from train_utils import *
 
+from customgraspnetAPI.my_wandb import * # wandb, psutil, GPUtil
+
 dis_criterion = 0.05
 rot_criterion = 0.25
 
@@ -546,10 +548,14 @@ def train(epoch, anchornet: nn.Module, localnet: nn.Module,
 #! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def run():
     args = parse_args()
-    print("\n@@@@@", args.joint_trainning, "\n@@@@@")
+    
     # prepare for trainning
     tb, save_folder = prepare_torch_and_logger(args)
 
+    # set wandb
+    #wandb.init(project="my-project", config={"learning_rate": 0.001, "epochs": 10})
+    my_wandb_init(args.key, args.project_name, config={args})
+    
     # Load Dataset
     logging.info('Loading Dataset...')
     sceneIds = list(range(args.scene_l, args.scene_r))
@@ -567,7 +573,7 @@ def run():
                                    output_size=(args.input_w, args.input_h),
                                    random_rotate=False,
                                    random_zoom=False)
-    val_list = list(range(100, 101))
+    val_list = list(range(100, 130))
     Val_Dataset = GraspnetPointDataset(args.all_points_num,
                                        args.dataset_path,
                                        args.scene_path,
@@ -658,7 +664,7 @@ def run():
                           train_results['multi_cls_loss'], epoch)
             tb.add_scalar('train_loss/offset_loss',
                           train_results['offset_loss'], epoch)
-        
+
         # Run Validation
         logging.info('Validating...')
         val_results = validate(epoch, anchornet, localnet, val_data, anchors,
@@ -678,6 +684,7 @@ def run():
                      save_folder,
                      mode='graspnet')
 
+    wandb.finish()
 
 if __name__ == '__main__':
     run()

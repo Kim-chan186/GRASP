@@ -9,7 +9,7 @@ epochs = 20
 for epoch in range(epochs):
     # Training logic...
     lr = epoch / 100.
-    wandb.log({"learning_rate": lr})
+    # wandb.log({"learning_rate": lr})
 
     # CPU 사용량
     cpu_usage = psutil.cpu_percent(interval=None)
@@ -24,8 +24,9 @@ for epoch in range(epochs):
     gpu_temp = gpus[0].temperature
 
     loss = epoch/10.
-    wandb.log({"train/loss": loss})
-
+    # wandb.log({"train/loss": loss})
+    if epoch > 5:
+        wandb.log({"epoch/epoch": epoch})
     # 메트릭 로깅
     wandb.log({
         "resource/cpu_usage": cpu_usage,
