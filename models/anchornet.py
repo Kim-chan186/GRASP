@@ -207,8 +207,8 @@ class AnchorGraspNet(nn.Module):
         self.trconv = nn.ModuleList()
         # backbone
         self.feature_dim = 128
-        self.backbone = Backbone(in_dim * 2, self.feature_dim // 16)     #! planes = feature_dim // 16
-        self.depth_backbone = depth_layer(1, self.feature_dim // 16) #!        = 8
+        self.backbone = Backbone(in_dim * 2, self.feature_dim // 16) #! planes = feature_dim // 16
+        self.depth_backbone = depth_layer(1, self.feature_dim // 16) #! = 8
 
         sam_model = sam_model_registry["vit_h"](checkpoint="./sam_vit_h_4b8939.pth")
         self.sam = SamAutomaticMaskGenerator(sam_model)
@@ -263,15 +263,19 @@ class AnchorGraspNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-    def forward(self, x):
+    def forward(self, x, rgbs):
         # use backbone to get downscaled features
-        rgbs = x[:, 1:, :, :]
         sams = []
         for rgb in rgbs:
+            import cv2
+            print("@@ ", rgb.shape)
+            cv2.imwrite('anchornet_sam_input.jpg', rgb.cpu().numpy())
             sam_mask = self.sam.generate(rgb)
-            sam_det = sv.Detections.from_sam(sam_result=sam_mask)
-            print("@@ ", rgb.shape, sam_det.shape)
-            sa = self.annotator.annotate(scene=np.zeros(rgb.shape, dtype=np.uint8), detections=sam_det)
+            sam_res = sv.Detections.from_sam(sam_result=sam_mask)
+            
+            print("@! ", rgb.shape)
+            print("@! ", sam_res.xyxy.shape)
+            sa = self.annotator.annotate(scene=np.zeros(rgb.shape, dtype=np.uint8), detections=sam_res)
             sams.append(sa)
         t_sams = torch.stack(sams)
 

@@ -327,7 +327,7 @@ def train(epoch, anchornet: nn.Module, localnet: nn.Module,
 
     data_start = time()
     data_time = 0
-    for anchor_data, rgbs, depths, grasppaths in tqdm(train_data,
+    for anchor_data, rgbs, rgb2, depths, grasppaths in tqdm(train_data,
                                                       desc=f'Train_{epoch}',
                                                       ncols=80):
         if len(rgbs) < args.batch_size:
@@ -352,7 +352,8 @@ def train(epoch, anchornet: nn.Module, localnet: nn.Module,
         x, y, _, _, _ = anchor_data
         x = x.cuda(non_blocking=True)
         target = [yy.cuda(non_blocking=True) for yy in y]
-        pred_2d, perpoint_features = anchornet(x)
+
+        pred_2d, perpoint_features = anchornet(x, rgbs.cuda())
 
 
         # cal anchor loss

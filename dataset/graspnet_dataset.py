@@ -130,7 +130,8 @@ class GraspnetPointDataset(GraspnetAnchorDataset):
         # load image
         color_img = self.cur_rgb.astype(np.float32) / 255.0
         depth_img = self.cur_depth.astype(np.float32)
-
+        rgb_image = np.transpose(color_img, (1, 2, 0))
+       
         # get grasp path
         grasp_path = self.grasppath[index]
-        return anchor_data, color_img, depth_img, grasp_path
+        return anchor_data, color_img, rgb_image, depth_img, grasp_path
